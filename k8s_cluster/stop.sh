@@ -1,0 +1,1 @@
+kind delete cluster --name local-k8s

@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kind-cluster
+  labels:
+    name: kind-cluster
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: kind-cluster
+data:
+  nginx.conf: |
+    events {}
+    http {
+      resolver kube-dns.kube-system.svc.cluster.local;
+      server {
+        server_name minio.local.io;
+        listen 80;
+        access_log /var/log/nginx/access_minio.log;
+
+        location / {
+          set $backend "http://minio-internal-ingest.minio-dev.svc.cluster.local:9090";
+          proxy_pass $backend;
+        }
+      }
+
+      server {
+        server_name ingest-minio.local.io;
+        listen 80;
+        access_log /var/log/nginx/access_minio.log;
+
+        location / {
+          proxy_set_header Host $http_host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-NginX-Proxy true;
+
+          # This is necessary to pass the correct IP to be hashed
+          real_ip_header X-Real-IP;
+
+          proxy_connect_timeout 300;
+
+          # To support websockets in MinIO versions released after January 2023
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+
+          chunked_transfer_encoding off;
+          set $backend "http://minio-internal-ingest.minio-dev.svc.cluster.local:9000";
+          proxy_pass $backend;
+        }
+      }
+
+      server {
+        server_name gitea.local.io;
+        listen 80;
+        access_log /var/log/nginx/access_gitea.log;
+        location / {
+          set $backend "http://gitea-http:3000";
+          proxy_pass $backend;
+        }
+      }
+
+      server {
+        server_name cribl.local.io;
+        listen 80;
+        access_log /var/log/nginx/access_cribl.log;
+        set $backend "http://logstream-leader-internal.cribl.svc.cluster.local";
+        location / {
+          proxy_pass $backend:9000;
+        }
+
+        location /http {
+          set $backend "http://logstream-workergroup.cribl.svc.cluster.local";
+          proxy_pass $backend:10080;
+        }
+        
+        location /hec {
+          set $backend "http://logstream-workergroup.cribl.svc.cluster.local";
+          proxy_pass $backend:8088;
+        }
+      }
+
+
+      server {
+        server_name splunk.local.io;
+        listen 80;
+        access_log /var/log/nginx/access_splunk.log;
+        set $backend "http://splunk-stdln-standalone-service.splunk.svc.cluster.local";
+        location / {
+          proxy_set_header Host $http_host;
+          proxy_pass $backend:8000;
+        }
+        
+        location /api {
+          set $upstream_splunk splunk-stdln-standalone-service.splunk.svc.cluster.local:9997;
+          fastcgi_pass $upstream_splunk;
+        }
+      }
+    }
+     
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: kind-cluster
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - name: tcp
+          containerPort: 81
+        - name: https
+          containerPort: 80
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf
+          defaultMode: 0777
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: kind-cluster
+spec:
+  clusterIP: 10.96.156.1
+  type: NodePort
+  ports:
+  - name: http-ingress
+    port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 30002
+  - name: tcp-ingress
+    port: 81
+    protocol: TCP
+    targetPort: 81
+    nodePort: 30003
+  selector:
+    app: nginx 

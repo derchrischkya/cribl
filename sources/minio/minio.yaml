@@ -1,0 +1,99 @@
+# Deploys a new Namespace for the MinIO Pod
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio-dev # Change this value if you want a different namespace name
+  labels:
+    name: minio-dev # Change this value to match metadata.name
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+    name: local-minio-storage
+    namespace: minio-dev
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-root-host-volume-minio
+  namespace: minio-dev
+spec:
+  storageClassName: local-minio-storage
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 50Gi
+  hostPath:
+    path: /tmp/etl/minio
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-root-host-volume-minio
+  namespace: minio-dev
+spec:
+  storageClassName: local-minio-storage
+  volumeName: pv-root-host-volume-minio
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Deploys a new MinIO Pod into the metadata.namespace Kubernetes namespace
+#
+# The `spec.containers[0].args` contains the command run on the pod
+# The `/data` directory corresponds to the `spec.containers[0].volumeMounts[0].mountPath`
+# That mount path corresponds to a Kubernetes HostPath which binds `/data` to a local drive or volume on the worker node where the pod runs
+# 
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: minio
+  name: minio
+  namespace: minio-dev # Change this value to match the namespace metadata.name
+spec:
+  containers:
+  - name: minio
+    image: quay.io/minio/minio:latest
+    command:
+    - /bin/bash
+    - -c
+    args: 
+    - minio server /data --console-address :9090
+    volumeMounts:
+    - name: storage
+      mountPath: "/data"
+  # nodeSelector:
+  #   kubernetes.io/hostname: local-k8s-worker2 # Specify a node label associated to the Worker Node on which you want to deploy the pod.
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+        claimName: pvc-root-host-volume-minio
+---
+## Ingest Service MinIO
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-internal-ingest
+  namespace: minio-dev
+spec:
+  clusterIP: 10.96.84.1
+  selector:
+    app: minio
+  ports:
+    - name: ingest
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+    - name: gui
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+    - name: keine
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
