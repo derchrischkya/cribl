@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cribl
+  labels:
+    name: cribl
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-root-host-volume-cribl
+  namespace: cribl
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /tmp/etl
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-root-host-volume-cribl
+  namespace: cribl
+spec:
+  volumeName: pv-root-host-volume-cribl
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
