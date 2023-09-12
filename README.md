@@ -12,29 +12,29 @@
 - Gitea implementation was planned but not possible in free version
 
 # Default Passwords
-- Splunk 
+- Splunk<br>
 `admin | myownsplunk`
 
-- MinIO 
+- MinIO<br>
 `admin | myownminio`
 
-- Cribl 
+- Cribl<br>
 `admin | myowncribl`
 
 # Default Endpoints
-- Gitea 
+- Gitea<br>
 `http://gitea.local.io:30002`
 
-- Cribl (Leader) 
+- Cribl (Leader)<br>
 `http://cribl.local.io:30002`
 
-- Splunk 
+- Splunk<br>
  `http://splunk.local.io:30002`
 
-- MinIO 
+- MinIO<br>
   `http://minio.local.io:30002`
 
-- MinIO Ingest 
+- MinIO Ingest<br>
   `http://ingest-minio.local.io:30002`
 
 # Open Implementation
