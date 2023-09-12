@@ -2,8 +2,6 @@
 ## Checklist
 - "/tmp/k8s/etl" exists locally 
 - /etc/hosts add
-<pre>
-</pre>
 
 ## Running
 - start all tools with `start.sh`
@@ -14,29 +12,29 @@
 - Gitea implementation was planned but not possible in free version
 
 # Default Passwords
-- Splunk
+- Splunk 
 `admin | myownsplunk`
 
-- MinIO
+- MinIO 
 `admin | myownminio`
 
-- Cribl
+- Cribl 
 `admin | myowncribl`
 
 # Default Endpoints
-- Gitea
+- Gitea 
 `http://gitea.local.io:30002`
 
-- Cribl (Leader)
+- Cribl (Leader) 
 `http://cribl.local.io:30002`
 
-- Splunk
+- Splunk 
  `http://splunk.local.io:30002`
 
-- MinIO
+- MinIO 
   `http://minio.local.io:30002`
 
-- MinIO Ingest
+- MinIO Ingest 
   `http://ingest-minio.local.io:30002`
 
 # Open Implementation
