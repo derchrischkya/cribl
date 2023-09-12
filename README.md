@@ -4,8 +4,12 @@
 - /etc/hosts add
 
 ## Running
+### Start Tools
 - start all tools with `start.sh`
 - stop all tools with `stop.sh`
+
+### Starting Order
+- start with `k8s_cluster/start.sh` to initate K8S kind cluster 
 
 # Information
 - This repository was used to get to-know cribl - deploys cribl with leader and worker groups
