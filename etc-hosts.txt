@@ -1,0 +1,5 @@
+127.0.0.1 gitea.local.io
+127.0.0.1 cribl.local.io
+127.0.0.1 splunk.local.io
+127.0.0.1 minio.local.io
+127.0.0.1 ingest-minio.local.io
